@@ -1,0 +1,49 @@
+syntax = "proto3";
+package endorsementstore;
+
+option go_package = "github.com/veraison/endorsementstore";
+
+import "google/protobuf/struct.proto";
+
+message EndorsementID {
+    string type = 1;
+    map<string, string> parts = 2;
+}
+
+enum Status {
+    FAILURE = 0;
+    SUCCESS = 1;
+    UNKNOWN = 2;
+    INVALID = 3;
+}
+
+message TrustVector {
+    Status hardware_authenticity = 1;
+    Status software_integrity = 2;
+    Status software_up_to_dateness = 3;
+    Status config_integrity = 4;
+    Status runtime_integrity = 5;
+    Status certification_status = 6;
+}
+
+message Evidence {
+    google.protobuf.Struct value = 1;
+}
+
+message EndorsementArgs{
+    EndorsementID id = 1;
+    Evidence evidence = 2;
+}
+
+message EndorsementReply {
+    TrustVector trust_vector = 1;
+    google.protobuf.Struct endorsements = 2;
+    int32 error_value = 3;
+    google.protobuf.Struct error_detail = 4;
+}
+
+service EndorsementFetcher {
+    rpc GetEndorsements(EndorsementArgs) returns (EndorsementReply);
+}
+
+// vim: set et sts=4 sw=4 si :

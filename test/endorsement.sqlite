@@ -1,0 +1,79 @@
+DROP TABLE IF EXISTS meta;
+CREATE TABLE meta(
+    version text,
+    name text,
+    last_updated timestamp,
+    deployed timestamp
+);
+
+-- Two tables, one for reference values (psa_sw_components), the other for
+-- verification keys (psa_verification_key), plus one view that joins them and
+-- pins software to a product via the endorsed prod_id field.
+
+DROP TABLE IF EXISTS psa_sw_components;
+CREATE TABLE psa_sw_components(
+    impl_id text,       /* psa-token + comid.reference-triple */
+    prod_id text,       /* comid.reference-triple */
+    type text,          /* psa-token + comid.reference-triple */
+    signer_id text,     /* psa-token + comid.reference-triple */
+    version text,       /* psa-token + comid.reference-triple */
+    description text,   /* psa-token + comid.reference-triple */
+    measurement text,   /* psa-token + comid.reference-triple */
+    PRIMARY KEY (prod_id, measurement)
+);
+
+DROP TABLE IF EXISTS psa_verification_key;
+CREATE TABLE psa_verification_key(
+    inst_id text,   /* psa-token + comid.attest-key-triple */
+    impl_id text,   /* psa-token + comid.attest-key-triple */
+    prod_id text,   /* comid.attest-key-triple */
+    iak_pub text,   /* comid.attest-key-triple */
+    PRIMARY KEY (inst_id, prod_id)
+);
+
+DROP VIEW IF EXISTS psa_endorsements;
+CREATE VIEW psa_endorsements AS
+    SELECT psa_sw_components.impl_id,
+           psa_sw_components.prod_id,
+           psa_verification_key.inst_id,
+           type,
+           signer_id,
+           version,
+           description,
+           measurement
+      FROM psa_sw_components,
+           psa_verification_key
+     WHERE psa_sw_components.prod_id = psa_verification_key.prod_id AND
+           psa_sw_components.impl_id = psa_verification_key.impl_id;
+
+-- A minimalist playground of internalised endorsements
+
+INSERT INTO psa_sw_components(impl_id, prod_id, type, signer_id, version, description, measurement)
+VALUES
+    (
+        "5051525354555657505152535455565750515253545556575051525354555657",
+        "acme.example/rr-trap",
+        "BL",
+        "76543210fedcba9817161514131211101f1e1d1c1b1a1918",
+        "3.4.2",
+        "TF-M_SHA256MemPreXIP",
+        "76543210fedcba9817161514131211101f1e1d1c1b1a1916"
+    ),
+    (
+        "5051525354555657505152535455565750515253545556575051525354555657",
+        "acme.example/rr-trap",
+        "M1",
+        "76543210fedcba9817161514131211101f1e1d1c1b1a1918",
+        "1.2",
+        "",
+        "76543210fedcba9817161514131211101f1e1d1c1b1a1917"
+    );
+
+INSERT INTO psa_verification_key(inst_id, impl_id, prod_id, iak_pub)
+VALUES
+    (
+        "01a0a1a2a3a0a1a2a3a0a1a2a3a0a1a2a3a0a1a2a3a0a1a2a3a0a1a2a3a0a1a2a3",
+        "5051525354555657505152535455565750515253545556575051525354555657",
+        "acme.example/rr-trap",
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEFn0taoAwR3PmrKkYLtAsD9o05KSM6mbgfNCgpuL0g6VpTHkZl73wk5BDxoV7n+Oeee0iIqkW3HMZT3ETiniJdg=="
+    );
