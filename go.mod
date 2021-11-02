@@ -1,8 +1,8 @@
-module github.com/veraison/protobuf-test
+module github.com/veraison/endorsement-store-protobuf-test
 
 go 1.17
 
-replace github.com/veraison/protobuf-test => ../
+replace github.com/veraison/endorsement-store-protobuf-test => ../
 
 require (
 	google.golang.org/grpc v1.40.0
